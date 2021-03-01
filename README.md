@@ -1,4 +1,4 @@
-# detect_rescan.sh - v1.12
+# detect_rescan.sh - v1.12b
 Bash script to wrapper Synopsys Detect for Black Duck scanning to reduce duplicate scan uploads between runs for use in frequent automated scan processes and optionally produce immediate project security summary reports.
 
 # INTRODUCTION
@@ -6,6 +6,8 @@ Bash script to wrapper Synopsys Detect for Black Duck scanning to reduce duplica
 This script is provided under an OSS license (specified in the LICENSE file) to allow users to report and manage unconfirmed snippets within a Black Duck project version.
 
 It does not represent any extension of licensed functionality of Synopsys software itself and is provided as-is, without warranty or liability.
+
+Minor fix in v1.12b to support server versions 2020.12 onwards BOM completion API change.
 
 # OVERVIEW
 
