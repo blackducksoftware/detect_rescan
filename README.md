@@ -7,27 +7,27 @@ This script is provided under an OSS license (specified in the LICENSE file) to 
 
 It does not represent any extension of licensed functionality of Synopsys software itself and is provided as-is, without warranty or liability.
 
-Minor fix in v1.12b to support server versions 2020.12 onwards BOM completion API change. Other changes in v1.13a-g
+Minor fix in v1.12b to support server versions 2020.12 onwards BOM completion API change. Other changes in v1.13a-g and v1.14 (current)
 
 # OVERVIEW
 
 The script is intended to address issues caused by frequently calling the Black Duck Detect scanner within a CI/CD pipleine or automated build environment which can result in repeated scans being submitted and performance issues on the Black Duck server. It can also produce console and other optional outputs of project status after analysis.
 
-Detect Rescan is not intended to replace [Synopsys Detect](https://detect.synopsys.com/doc), which should continue to be used for standard Black Duck scanning, except specific use-cases where it can be useful including within Developer pipelines within CI, or where the reporting features are useful.
+Detect Rescan is not intended to replace [Synopsys Detect](https://detect.synopsys.com/doc) in all scenarios, which should continue to be used for standard Black Duck scanning. Detect Rescan is designed to support specific use-cases mainly in Developer pipelines within CI where frequent scanning causes server performance issues, or where the reporting features are useful.
 
 It is used as a wrapper for the standard Synopsys Detect bash script on Linux or MacOS (or in Windows using a Bash sub-system), and does the following:
 
-- Processes supplied Synpsys Detect options to determine if a post-action is required (also looks at environment variables and options in a .yml if specified)
+- Processes supplied Synpsys Detect options to determine if a post-action is required (also looks at environment variables and options in a application.yml if specified)
 - Downloads and runs Detect (detect.sh) offline with supplied options to perform a scan
-- Identifies the BOM and Signature scan files from offline run (note the script should only be used for projects where 1 signature scan has been mapped)
+- Finds the BOM and Signature scan files from the offline Detect run (note the script should only be used for projects where 1 signature scan has been mapped to a project version)
 - Looks for previous scan data (see below for location of this data) 
-- Compares scanned BOM files and upload files if different/new to previous scan
-- Checks last date/time for signature scan and uploads if more than specified period (24 hours by default) or new scan
+- Compares scanned BOM files and uploads jsonld files only if different/new to previous scan
+- Checks last date/time for signature scan and uploads the json file if greater than specified period (24 hours by default) or new scan
 - If post-action or report required:
   - Waits for server-side scan and BOM completion
   - Runs Detect to perform post-action with no rescan
 - If `--report` or `--markdown` specified, produce summary reports (--markdown writes the file blackduck.md in MD format)
-- If `--testxml` specified, produce junit XML test output files (policies.xml and vulns.xml)
+- If `--testxml` specified, produces junit XML test output files (policies.xml and vulns.xml)
 
 # PREREQUISITES
 
@@ -36,15 +36,15 @@ It is used as a wrapper for the standard Synopsys Detect bash script on Linux or
 * The following additional programs must be installed in the environment and the script will check for them:
     - cksum (usually installed on MacOS & Linux)
     - curl
-  Please refer to your platform documentation to install these. The program jq is also required but will be downloaded dynamically if not available.
+  Please refer to your platform documentation to install these. The program jq is also required but will be downloaded dynamically by the script if not available.
 
-* The script uses a custom field (`prevScanData` of type `Text Area`) in Project Versions by default to store previous scan data. The API key used for scanning will require the `Bom Manager` permission within the projects to be scanned (or be the project creator) to read and update this custom field.
+* The script uses a custom field (`prevScanData` of type `Text Area`) in Project Versions by default to store previous scan data. The API key used for scanning will require the `BOM Manager` permission within the projects to be scanned (or be the project creator) to read and update this custom field.
 
 * Alternatively, if the `--file` option is specified, the script will write the file `.bdprevscan` to the top-level folder of the project to be scanned which needs to be retained between runs. If the project location is not persistent, then the .bdprevscan file should be copied to a permanent location (and copied back before subsequent runs) or the script could be modified to write to a persistent location to ensure the file is saved between runs.
 
 * The script uses Synopsys Detect to perform scans, and has the same prerequisites including internet connectivity to download the script, connection to Black Duck server to upload scans, access to package managers for dependency analysis etc. 
 
-* Detect_rescan should not be used for projects where more than 1 signature scan has been mapped.
+* Detect_rescan should not be used for projects where more than 1 signature scan has been mapped to a single Black Duck project version.
 
 * Detect_rescan does not support Snippet or Binary scan types (Dependency and Signature scans are supported).
 
@@ -81,9 +81,9 @@ Alternatively the script can be downloaded and saved locally using:
 
 The Black Duck server URL and API token are required and can be specified either as environment variables (`BLACKDUCK_URL` and `BLACKDUCK_API_TOKEN`), in a project application-project.yml file (specified using `--spring.profiles.active`) or as command line arguments (`--blackduck.url` and `--blackduck.api.token`).
 
-# ARGUMENTS
+# DETECT RESCAN SPECIFIC ARGUMENTS
 
-The script provides some options in addition to the standard Synopsys Detect arguments as follows:
+The script supports all standard Synopsys Detect options, but also supports some additional options as follows:
 
     --quiet         - Hide Synopsys Detect standard output and other non-essential script notifications.
     --report        - Use to extract summary values after the scan completions including number of policy violations and counts of component vulnerability, license and operational risks identified.
@@ -128,7 +128,7 @@ The example output of the `--report` option is shown below:
 
 # DEBUG MODE
 
-Set the environment variable `DEBUG` to any non-blank value to cause the script to output extra debug messages. Note this will also cause the Detect program to output additional information.
+Set the environment variable `DEBUG` to any non-blank value to cause the script to output extra debug messages (e.g. `export DEBUG=1`). Note this will also cause the Detect program to output additional information.
 
 # INTEGRATIONS & SUPPORT
 
@@ -157,7 +157,7 @@ For Windows targets, the Windows Bash is not 100% compliant and the following mo
 	      curl -s -L https://raw.github.com/blackducksoftware/detect_rescan/master/detect_rescan.sh > detect_rescan.sh
 	      ./detect_rescan.sh --blackduck.api.token=MmEwZTdkNjAtNjU5MS00MWEwLThjZTgtZGI2MTFiNDA2ZDkxOjRhYYTcyLTdiNjMtNGQxZC05ZTNhLTY0NDM0MjEwZjhjZg== --blackduck.trust.cert=true --blackduck.url=https://server.blackduck.synopsys.com --detect.detector.search.depth=1 --detect.project.name=Myproject --detect.project.version.name=1.0 --detect.policy.check.fail.on.severities=ALL --quiet --report --testxml
 
-# TESTXML OUTPUT
+# AZURE DEVOPS TESTXML OUTPUT
 
 The `--testxml` option will cause detect_rescan.sh to generate output files `policies.xml` and `vulns.xml` which includes scan results in Junit format.
 The `policies.xml` test data represents the OSS components identified in the Black Duck scan, with components which have 1 or more policy violation being marked as a failed test. Components without policy violation are shown as passed tests.
@@ -171,3 +171,28 @@ For example, in Azure DevOps, the following yml fragment can be used to import t
 	  displayName: 'Publish Test Results **/policies.xml'
 	  inputs:
 	    testResultsFiles: '**/policies.xml'
+
+# GITHUB ACTIONS EXAMPLE INTEGRATION
+
+The following task shows how the detect_rescan.sh script can be used as a Bash step within a Github Action running on a Linux step.
+
+    - name: Get Synopsys Detect Rescan
+        run: >
+          curl -s -L https://raw.github.com/blackducksoftware/detect_rescan/main/detect_rescan.sh > detect_rescan.sh; 
+          bash detect_rescan.sh --blackduck.url=https://server.blackduck.synopsys.com --blackduck.api.token=MmEwZTdkNjAtNjU5MS00MWEwLThjZTgtZGI2MTFiNDA2ZDkxOjRhYYTcyLTdiNjMtNGQxZC05ZTNhLTY0NDM0MjEwZjhjZg== --detect.project.name=PROJECT --quiet --testxml --report
+
+# GITHUB ACTIONS TESTXML OUTPUT
+
+The `--testxml` option will cause detect_rescan.sh to generate output files `policies.xml` and `vulns.xml` which includes scan results in Junit format.
+The `policies.xml` test data represents the OSS components identified in the Black Duck scan, with components which have 1 or more policy violation being marked as a failed test. Components without policy violation are shown as passed tests.
+The `vulns.xml` test data represents the outstanding vulnerabilities from the Black Duck project (remediated/ignored vulnerabilities) with open vulnerabilities being marked as a failed test.
+
+The json file can be imported as test results using the CI features for Junit test analysis.
+
+In Github Actions, add the following yml fragment to import the policies.xml file as Junit Test results (or alternatively change to use the vulns.xml file):
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v2
+        with:
+          report_paths: '**/vulns.xml'
+          github_token: ${{ secrets.GITHUB_TOKEN }}
