@@ -1501,7 +1501,7 @@ if [ $UPDATE_PREVSCANDATA -eq 1 -a -z "$VERURL" -a $MODE_PREVFILE -eq 0 ] || [ $
 then
 # Need to locate project after scan to update custom field
     msg "Checking for project version after scan"
-    VERURL=$(get_projver "$PROJECT" "$VERSION" 6)
+    VERURL=$(get_projver "$PROJECT" "$VERSION" 30)
     if [ $? -ne 0 ] || [ -z "$VERURL" ]
     then
         error "Unable to locate project '$PROJECT' version '$VERSION'"
