@@ -31,9 +31,6 @@
 output() {
     echo "detect_rescan: $*"
 }
-
-set -x
-set -v
  
 output "Starting Detect Rescan wrapper v1.16b"
 
