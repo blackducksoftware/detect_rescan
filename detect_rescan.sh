@@ -23,12 +23,17 @@
 #  --curlopts      - Add an option to curl (usually -k) to support insecure connections to a BD server without authorised certificate (alternatively set CURLOPTS env var)
 #  --detectscript=mydetect.sh
 #                  - Use a local specified copy of the detect.sh script as opposed to downloading dynamically from https://detect.synopsys.com/detect.sh.
+#  --detectjar=/home/Users/blackduck/synopsys-detect-6.9.1.jar
+#                  - Use a local copy of detect.jar directly as opposed to the detect.sh script.
 #  --sigtime=XXXX  - Specify the time (in seconds) used to determine whether a Signature scan should be uploaded (default 86400 = 24 hours).#   Same as detect.sh
 #
 
 output() {
     echo "detect_rescan: $*"
 }
+
+set -x
+set -v
  
 output "Starting Detect Rescan wrapper v1.16b"
 
@@ -62,6 +67,7 @@ DETECT_TIMEOUT=4800
 PREVSCANDATA=
 PROJEXISTS=0
 DETECT_SCRIPT=
+DETECT_JAR=
 MODE_RESET=0
 JQTEMPDIR=
 JQ=
@@ -298,7 +304,12 @@ get_token() {
 }
 
 run_detect_offline() {
-    if [ -z "$DETECT_SCRIPT" ]
+    if [ -n "$DETECT_JAR" ]
+    then
+        debug "run_detect_offline(): Detect jar $DETECT_JAR will be used"
+		DETECT_SCRIPT="java -jar $DETECT_JAR"
+		debug "run_detect_offline(): Detect script $DETECT_SCRIPT will be used"
+    elif [ -z "$DETECT_SCRIPT" ]
     then
         curl $CURLOPTS -s -L https://detect.synopsys.com/detect.sh > $DETECT_TMP 2>/dev/null
         if [ ! -r $DETECT_TMP ]
@@ -1338,6 +1349,15 @@ while (( "$#" )); do
             if [ ! -r "$DETECT_SCRIPT" ]
             then
                 error "Detect script $DETECT_SCRIPT does not exist"
+            fi
+            shift; continue
+            ;;
+	    --detectjar=*)
+            DETECT_JAR=$(getargval "$1")
+            debug "process_args(): DETECT_JAR set to $DETECT_JAR"
+            if [ ! -r "$DETECT_JAR" ]
+            then
+                error "Detect jar $DETECT_JAR does not exist"
             fi
             shift; continue
             ;;
