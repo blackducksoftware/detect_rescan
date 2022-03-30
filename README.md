@@ -1,4 +1,7 @@
 # detect_rescan.sh - v1.22
+
+This script is no longer supported as some of its functionality has been superceded by features in Synopsys Detect 7 (including Rapid scan, signature scan rescan interval). It also uses Synopsys Detect 6 which does not support the latest server features.
+
 Bash script to wrapper Synopsys Detect for Black Duck scanning to reduce duplicate scan uploads between runs for use in frequent automated scan processes and optionally produce immediate project security summary reports.
 
 # INTRODUCTION
